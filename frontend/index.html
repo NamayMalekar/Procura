@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Purchasing Agent Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== FRONTEND FILE MAP: styles first, then page layout, then JavaScript at the bottom ===== */
+:root{--ink:#1b2430;--muted:#5d6978;--paper:#eef1f5;--panel:#fff;--line:#d6dce4;--accent:#3b4cca;
+--ok:#1f7a5c;--okbg:#e3f3ec;--warn:#9a6212;--warnbg:#fbf0dc;--bad:#b3362e;--badbg:#fbe7e5;--r:8px}
+@media (prefers-color-scheme:dark){:root{--ink:#e6ebf2;--muted:#9aa6b6;--paper:#131a23;--panel:#1b2430;--line:#2e3948;
+--accent:#8f9cff;--ok:#5fd0a5;--okbg:#17352b;--warn:#e6b45e;--warnbg:#38290f;--bad:#ff8f86;--badbg:#3c1a17}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 "Public Sans",system-ui,sans-serif;color:var(--ink);background:var(--paper)}
+button,select{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:300px 1fr;min-height:100vh}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:20px 16px;overflow:auto;max-height:100vh;position:sticky;top:0}
+aside h1{font-size:18px;margin:0 0 2px}
+aside p{margin:0 0 16px;color:var(--muted);font-size:13px}
+.group{margin:18px 0 6px;font-weight:600;font-size:13px;color:var(--muted)}
+.case{display:block;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:var(--r);padding:8px 10px;cursor:pointer}
+.case:hover{background:var(--paper)}
+.case.on{border-color:var(--accent);background:var(--paper)}
+.case b{display:block;font-weight:600}
+.case span{font-size:12.5px;color:var(--muted)}
+main{padding:24px 32px 60px;max-width:1000px}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:var(--r);padding:7px 14px;cursor:pointer;font-weight:500}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:focus-visible,.case:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn[disabled]{opacity:.5;cursor:wait}
+select{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:7px 10px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.tab{background:none;border:0;padding:8px 14px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;font-weight:500}
+.tab.on{color:var(--ink);border-color:var(--accent)}
+h2{font-size:22px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 16px}
+.chip{display:inline-block;border-radius:99px;padding:2px 10px;font-size:13px;font-weight:600}
+.chip.ok{background:var(--okbg);color:var(--ok)}.chip.warn{background:var(--warnbg);color:var(--warn)}.chip.bad{background:var(--badbg);color:var(--bad)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin-bottom:16px}
+.card h3{margin:0 0 8px;font-size:15px}
+ul{margin:6px 0 0;padding-left:20px}li{margin:3px 0}
+/* the ledger: one column per cycle, stages stacked with a rail */
+.cycle{border-left:3px solid var(--line);margin:0 0 18px 6px;padding-left:18px}
+.cycle.bad{border-color:var(--bad)}.cycle.good{border-color:var(--ok)}
+.cycle>h3{margin:0 0 10px;font-size:16px}
+.stage{display:grid;grid-template-columns:110px 1fr;gap:12px;padding:8px 0;border-top:1px solid var(--line)}
+.stage:first-of-type{border-top:0}
+.stage .k{font-weight:600}
+details summary{cursor:pointer;color:var(--accent);font-size:13.5px}
+pre{background:var(--paper);border-radius:var(--r);padding:10px;overflow:auto;font-size:12px;margin:6px 0 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--muted)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);padding:24px 0}
+.approve{border-color:var(--warn);background:var(--warnbg)}
+@media (max-width:820px){.app{grid-template-columns:1fr}aside{position:static;max-height:none}main{padding:18px}.stage{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <h1>Purchasing agent</h1>
+  <p>Pick a situation. The agent investigates, decides, acts and checks its own result.</p>
+  <div id="cases"></div>
+</aside>
+<main>
+  <div class="bar">
+    <label>Decision engine
+      <select id="brain"><option value="rules">Built-in rules</option><option value="llm">Claude (needs API key)</option></select></label>
+    <label><input type="checkbox" id="auto"> Skip human approval</label>
+    <button class="btn primary" id="run">Run agent</button>
+    <button class="btn" id="reset">Reset data</button>
+  </div>
+  <div class="tabs" role="tablist">
+    <button class="tab on" data-t="run">Agent run</button>
+    <button class="tab" data-t="state">System data</button>
+    <button class="tab" data-t="eval">Evaluation</button>
+  </div>
+  <section id="view"></section>
+</main>
+</div>
+<script>
+/* ===== JAVASCRIPT: talks to the backend API (/api/...) and draws the screen ===== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let cases=[],sel=null,run=null,tab='run',cfg={};
+const chip=(t,k)=>`<span class="chip ${k}">${esc(t)}</span>`;
+const statusKind=s=>/blocked|failure|needs_replan|failed/.test(s)?'bad':/pending|escalat|rejected_by/.test(s)?'warn':'ok';
+const api=async(p,o)=>{const r=await fetch(p,o&&{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)});
+  if(!r.ok)throw new Error((await r.json()).detail||r.statusText);return r.json()};
+const json=o=>`<details><summary>Show details</summary><pre>${esc(JSON.stringify(o,null,2))}</pre></details>`;
+
+async function init(){
+  cfg=await api('/api/config'); cases=await api('/api/scenarios');
+  if(!cfg.llm_available)$('#brain option[value=llm]').disabled=true;
+  const names={1:'Review a recommendation',2:'Supplier cannot fulfil',3:'Demand has changed',4:'A constraint blocks the buy'};
+  let h='';for(const n of [1,2,3,4]){h+=`<div class="group">Scenario ${n}: ${names[n]}</div>`;
+    for(const c of cases.filter(c=>c.scenario===n))h+=`<button class="case" data-id="${c.id}"><b>${esc(c.title)}</b><span>${esc(c.trigger)}</span></button>`}
+  $('#cases').innerHTML=h;
+  document.querySelectorAll('.case').forEach(b=>b.onclick=()=>{sel=b.dataset.id;run=null;tab='run';draw()});
+  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{tab=b.dataset.t;draw()});
+  $('#run').onclick=doRun;
+  $('#reset').onclick=async()=>{await api('/api/reset',{});run=null;draw()};
+  sel=cases[0].id;draw();
+}
+async function doRun(){
+  if(!sel)return;const b=$('#run');b.disabled=true;b.textContent='Working...';
+  try{run=await api('/api/run',{case_id:sel,brain:$('#brain').value,auto_approve:$('#auto').checked});tab='run'}
+  catch(e){alert(e.message)} b.disabled=false;b.textContent='Run agent';draw();
+}
+async function decide(ok){run=await api(`/api/runs/${run.run_id}/approve`,{approve:ok});draw()}
+function draw(){
+  document.querySelectorAll('.case').forEach(b=>b.classList.toggle('on',b.dataset.id===sel));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+  ({run:drawRun,state:drawState,eval:drawEval})[tab]();
+}
+function drawRun(){
+  const c=cases.find(x=>x.id===sel);
+  let h=`<h2>${esc(c.title)}</h2><p class="sub">${esc(c.trigger)}</p>`;
+  if(!run){$('#view').innerHTML=h+'<p class="empty">Choose Run agent to start. Each run changes the system data, so use Reset data to start fresh.</p>';return}
+  h+=`<div class="card"><h3>Outcome ${chip(run.status.replaceAll('_',' '),statusKind(run.status))} ${run.decision?chip('decision: '+run.decision,'ok'):''}</h3>
+    <p>${esc(run.rationale)}</p><ul>${run.factors.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
+    ${run.escalation?`<p><b>Escalated to buyer:</b> ${esc(run.escalation.reason)}<br>${esc(run.escalation.follow_up||'')}</p>`:''}
+    ${run.notes.map(n=>`<p class="sub">${esc(n)}</p>`).join('')}</div>`;
+  if(run.status==='pending_approval')h+=`<div class="card approve"><h3>Waiting for your approval</h3>
+    <p>Order value is $${run.pending.verdict.total_cost.toFixed(2)}, above the $${cfg.approval_threshold} limit.</p>
+    <button class="btn primary" onclick="decide(true)">Approve and place order</button>
+    <button class="btn" onclick="decide(false)">Reject</button></div>`;
+  for(const cy of run.cycles){
+    const v=cy.verification,k=v?(v.ok?'good':'bad'):'';
+    h+=`<div class="cycle ${k}"><h3>Cycle ${cy.cycle}${cy.feedback_in?.execution_issues?' (re-plan after a failed check)':''}</h3>`;
+    h+=`<div class="stage"><div class="k">Investigate</div><div>${cy.tool_calls.length} tool calls: ${[...new Set(cy.tool_calls.map(t=>t.tool))].join(', ')}${json(cy.tool_calls)}</div></div>`;
+    cy.attempts.forEach(a=>{const vd=a.verdict;
+      h+=`<div class="stage"><div class="k">Propose${cy.attempts.length>1?' #'+a.attempt:''}</div><div>
+        ${esc(a.proposal.decision)} with ${a.proposal.actions.length} action(s). ${chip(vd.ok?'validator: passed':'validator: blocked',vd.ok?'ok':'bad')}
+        ${vd.violations.length?`<ul>${vd.violations.map(x=>`<li><b>${esc(x.code)}</b>: ${esc(x.message)}</li>`).join('')}</ul>`:''}
+        ${vd.metrics?`<div class="sub">Stock position ${vd.metrics.before.position} to ${vd.metrics.after.position} (target ${vd.metrics.after.target}), cost $${vd.total_cost}</div>`:''}
+        ${json(a.proposal.actions)}</div></div>`});
+    if(cy.approval)h+=`<div class="stage"><div class="k">Approval</div><div>Approved by buyer, re-validated before executing.</div></div>`;
+    if(cy.execution)h+=`<div class="stage"><div class="k">Execute</div><div>${cy.execution.map(r=>`<div>${esc(r.action)} ${esc(r.po_id)}: ${chip(r.status,r.status==='confirmed'||r.status==='ok'?'ok':r.status==='partial'?'warn':'bad')} ${r.confirmed!=null?'confirmed '+r.confirmed:''} ${esc(r.detail||'')}</div>`).join('')||'No orders needed.'}</div></div>`;
+    if(v)h+=`<div class="stage"><div class="k">Verify</div><div>${chip(v.ok?'matches expectation':'differs from expectation',v.ok?'ok':'bad')}
+      ${v.issues.length?`<ul>${v.issues.map(x=>`<li><b>${esc(x.code)}</b>: ${esc(x.message)}</li>`).join('')}</ul>`:`<div class="sub">Stock position now ${v.actual.position}, target ${v.actual.target}.</div>`}</div></div>`;
+    h+='</div>';
+  }
+  $('#view').innerHTML=h;
+}
+async function drawState(){
+  const s=await api('/api/state');
+  const t=(head,rows)=>`<table><tr>${head.map(x=>`<th class="${x[1]||''}">${x[0]}</th>`).join('')}</tr>${rows.join('')}</table>`;
+  $('#view').innerHTML=`<div class="card"><h3>Inventory</h3>${t([['Product'],['Node'],['On hand','n'],['Incoming','n'],['Capacity','n']],
+    s.inventory.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.node}</td><td class="n">${r.on_hand}</td><td class="n">${r.incoming}</td><td class="n">${r.capacity}</td></tr>`))}</div>
+   <div class="card"><h3>Purchase orders</h3>${t([['PO'],['SKU'],['Supplier'],['Ordered','n'],['Supplier ships','n'],['Status'],['Created by']],
+    s.pos.map(p=>`<tr><td>${p.id}</td><td>${p.sku}</td><td>${p.supplier_id}</td><td class="n">${p.qty}</td><td class="n">${p.supplier_confirmed_qty??'-'}</td><td>${p.status}</td><td>${p.created_by}</td></tr>`))}</div>
+   <div class="card"><h3>Budget left by category</h3>${t([['Category'],['Remaining','n'],['Total','n']],
+    Object.entries(s.budgets).map(([k,b])=>`<tr><td>${k}</td><td class="n">$${b.remaining.toFixed(2)}</td><td class="n">$${b.total.toFixed(2)}</td></tr>`))}</div>
+   <div class="card"><h3>Escalations for the buyer</h3>${s.escalations.length?t([['Ticket'],['SKU'],['Reason'],['Next step']],
+    s.escalations.map(e=>`<tr><td>${e.id}</td><td>${e.sku}</td><td>${esc(e.reason)}</td><td>${esc(e.follow_up)}</td></tr>`)):'<p class="empty">None yet.</p>'}</div>`;
+}
+async function drawEval(){
+  $('#view').innerHTML='<p class="empty">Running all scenarios on fresh data...</p>';
+  const r=await api('/api/eval');
+  $('#view').innerHTML=`<h2>${r.passed} of ${r.total} scenarios pass</h2><p class="sub">Each scenario runs on fresh data and is scored against hand-written correct answers.</p>`+
+   r.results.map(x=>`<div class="card"><h3>${esc(x.case.id)} ${esc(x.case.title)} ${chip(x.pass?'pass':'fail',x.pass?'ok':'bad')}</h3>
+    <div class="sub">decision ${x.decision}, ${x.cycles} cycle(s), status ${x.status.replaceAll('_',' ')}</div>
+    <ul>${x.checks.map(c=>`<li>${c.pass?'Passed':'<b>Failed</b>'}: ${c.check.replaceAll('_',' ')} (${esc(c.detail)})</li>`).join('')}</ul></div>`).join('');
+}
+init();
+</script>
+</body>
+</html>
