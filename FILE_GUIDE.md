@@ -1,41 +1,97 @@
 # Which file has which code
 
-## Backend (`backend/`)
-| File | What is inside (simple words) | Edit it when you want to... |
-|---|---|---|
-| `config.py` | Settings and business rules: approval limit, max stock ceiling, minimum supplier reliability, retry limits | change a policy number |
-| `data.py` | All fake data: products, stock, sales, suppliers, budgets, open POs, and the 10 test cases (`CASES`) | add a product, change a number, add a new scenario |
-| `planning.py` | The math: how much stock we want, whether a sales jump is real, rounding to case sizes | change how demand or target stock is calculated |
-| `store.py` | The in-memory database and simple "look up X" helpers | add a new kind of data |
-| `supplier_api.py` | Pretend supplier: says yes, partly yes, or no (and injects failures) | add a new kind of supplier failure |
-| `executor.py` | The only code that creates, changes or cancels purchase orders and moves budget | add a new action (e.g. transfer stock between nodes) |
-| `tools.py` | Read-only tools the agent uses to investigate, plus their descriptions for the LLM | give the agent a new source of information |
-| `brain_rules.py` | The agent's decision logic without AI (a buyer playbook) | change how it picks suppliers or chooses accept/modify/reject |
-| `brain_llm.py` | The Claude version of the brain: its instructions (`SYSTEM`) and answer format (`SUBMIT`) | change the AI instructions |
-| `validator.py` | The safety checks before acting (`validate`) and the "did it work?" check after acting (`verify`) | add or loosen a safety rule |
-| `agent.py` | The main loop: investigate, validate, ask human, act, verify, retry | change the retry or approval flow |
-| `evaluation.py` | The scoring: correct answers for each scenario and the checks | add a test case or a new check |
-| `main.py` | The web API (buttons in the UI call these URLs) | add a new endpoint |
+The project follows the same layered idea as CityCare and Stayvo:
+**core** (settings and rules), **commons** (shared helpers), **database** (all data access), then the feature layers on top.
+Each layer only talks to the layers below it.
 
-## Frontend
+```
+api/routes  ->  services  ->  agent  ->  database  ->  SQLite file
+                                |-> domain (math)   |-> integrations (mock supplier)
+core + commons are used by everyone
+```
+
+## backend/app/
+
+### core/  (settings and business rules)
+| File | What is inside | Edit it to... |
+|---|---|---|
+| `core/config.py` | Environment settings: database path, API key, which brain, model name | change a setting |
+| `core/policy.py` | Business rules: approval limit, stock ceiling, minimum supplier reliability, retry limits | change a policy number |
+| `core/exceptions.py` | The error types (NotFound, InvalidState, BrainError) | add a new error type |
+
+### commons/  (shared helpers, used everywhere)
 | File | What is inside |
 |---|---|
-| `frontend/index.html` | The whole screen: CSS at the top, HTML in the middle, JavaScript at the bottom |
+| `commons/enums.py` | Fixed words: decisions, run statuses, PO statuses, action types |
+| `commons/money.py` | Money in whole cents (avoids decimal bugs) |
+| `commons/packs.py` | Round quantities to supplier case sizes |
+| `commons/schemas.py` | The shapes of API request bodies |
 
-## Tests, docs, setup
+### database/  (all data access, SQLite)
+| File | What is inside | Edit it to... |
+|---|---|---|
+| `database/schema.py` | Table definitions (the data model) | add a table or column |
+| `database/seed_data.py` | The fake business data as plain Python | change stock, prices, budgets, suppliers |
+| `database/seed.py` | Loads that data into the tables | rarely |
+| `database/connection.py` | Opens SQLite, makes in-memory copies for what-if tests | rarely |
+| `database/repositories/*.py` | One file per table group: catalog, inventory, supplier_items, budgets, purchase_orders, escalations, audit, runs | change a query |
+| `database/store.py` | The single door to the database; the agent only talks to this | add a new read/write helper |
+
+### domain/, integrations/
+| File | What is inside | Edit it to... |
+|---|---|---|
+| `domain/planning.py` | The inventory math: target stock, real-surge vs one-day-spike detection | change how demand or target stock is calculated |
+| `integrations/supplier_api.py` | The pretend supplier: yes, partly, or no, plus injected failures | add a new supplier failure type |
+
+### agent/  (the thinking and acting)
+| File | What is inside | Edit it to... |
+|---|---|---|
+| `agent/agent.py` | The main loop: investigate, safety check, approval, act, verify, retry, escalate | change retry/approval flow |
+| `agent/tools.py` | Read-only tools the agent uses to investigate (and their descriptions for the LLM) | give the agent new information |
+| `agent/validator.py` | `validate()` = safety checks before acting. `verify()` = did reality match the plan? | add or loosen a safety rule |
+| `agent/executor.py` | The only code that creates/amends/cancels purchase orders and moves budget | add an action (e.g. stock transfer) |
+| `agent/brains/rules.py` | Decision logic without AI (a buyer playbook) | change how it picks suppliers or decides |
+| `agent/brains/llm.py` | The Claude version: instructions (`SYSTEM`) and answer format (`SUBMIT`) | change the AI's instructions |
+| `agent/brains/__init__.py` | Chooses which brain to use | rarely |
+
+### services/, api/, evaluation/
+| File | What is inside | Edit it to... |
+|---|---|---|
+| `services/run_service.py` | Use-cases the API calls: start a run, approve a run | add a new use-case |
+| `api/routes/*.py` | The web endpoints: runs, scenarios, state, evaluation, system | add an endpoint |
+| `api/deps.py` | Gives routes access to the database and services | rarely |
+| `main.py` | Builds the app and serves the React UI | rarely |
+| `evaluation/cases.py` | The 10 test situations | add a scenario |
+| `evaluation/expectations.py` | The hand-written correct answers | add a correct answer |
+| `evaluation/scorer.py` | The scoring checks | add a new check |
+
+## backend/ (outside app/)
 | File | What is inside |
 |---|---|
 | `tests/test_scenarios.py` | Scenario tests, plus tests where the brain is wrong or the supplier misbehaves |
-| `tests/test_api.py` | One test that calls the web API |
-| `evals/run_eval.py` | Prints the scorecard in the terminal |
-| `docs/ARCHITECTURE.md` | Architecture diagram and the two feedback loops |
-| `.env.example` | Which environment variables exist (copy to `.env`) |
-| `requirements.txt` | Python packages |
+| `tests/test_database.py`, `tests/test_api.py` | Database layer and web API tests |
+| `scripts/run_eval.py`, `scripts/demo.py` | Terminal scorecard and a readable story of each run |
+| `.env.example`, `requirements.txt`, `pytest.ini` | Setup files |
+
+## frontend/src/ (React)
+| File | What is inside | Edit it to... |
+|---|---|---|
+| `styles/tokens.css` | All colours, fonts, radius, light and dark themes | restyle the whole app |
+| `styles/base.css`, `layout.css`, `components.css` | Page reset, layout, component styles | change spacing or layout |
+| `core/api.js` | Every call to the backend | add an API call |
+| `core/theme.js` | Light/dark switch, remembered in the browser | rarely |
+| `core/labels.js` | Plain-English wording for statuses, decisions and tools | change any wording |
+| `commons/*.jsx` | Reusable parts: Button, Chip, Icon, Segmented, Switch, Details | add a shared component |
+| `layout/AppShell.jsx` | Sidebar, brand, navigation, theme button | change navigation |
+| `features/console/` | The main screen: scenario list, case brief, outcome, approval banner, step-by-step ledger | change the main screen |
+| `features/data/DataPage.jsx` | System data tables (inventory, orders, budgets, tickets, audit) | add a table |
+| `features/evaluation/EvaluationPage.jsx` | The evaluation scorecard screen | change the scorecard |
+| `App.jsx`, `main.jsx` | Page switching and app start | rarely |
 
 ## Common changes
-- **"Make approval stricter"** -> `APPROVAL_THRESHOLD` in `config.py` (or `.env`)
-- **"Allow bigger overstock"** -> `MAX_COVER_FACTOR` in `config.py`
-- **"Add a new product or supplier"** -> `data.py` (`products`, `inventory`, `demand`, `supplier_items`)
-- **"Add a new scenario"** -> add a case in `CASES` (`data.py`) and its golden answer in `EXPECT` (`evaluation.py`)
-- **"The agent should also check X before deciding"** -> add a tool in `tools.py`, then call it in `brain_rules.py`; list it in `EVIDENCE` in `validator.py` to make it mandatory
-- **"New safety rule"** -> `check_state()` in `validator.py`
+- **Stricter approval:** `APPROVAL_THRESHOLD` in `backend/.env` or `core/policy.py`
+- **New product or supplier:** `database/seed_data.py`
+- **New scenario:** add a case in `evaluation/cases.py` and its correct answer in `evaluation/expectations.py`
+- **New safety rule:** `check_state()` in `agent/validator.py`
+- **New thing the agent must always check first:** add a tool in `agent/tools.py`, call it in `agent/brains/rules.py`, list it in `EVIDENCE` in `agent/validator.py`
+- **Change colours or fonts:** `frontend/src/styles/tokens.css`
