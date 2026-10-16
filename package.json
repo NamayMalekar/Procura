@@ -1,0 +1,15 @@
+{
+  "name": "ai-purchasing-agent-root",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "start": "python backend/app/main.py",
+    "test:backend": "python -m pytest backend",
+    "eval": "python backend/scripts/run_eval.py",
+    "demo": "python backend/scripts/demo.py"
+  }
+}

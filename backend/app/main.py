@@ -1,5 +1,13 @@
 """App entry point.  Run from the backend/ folder:  uvicorn app.main:app --reload"""
+import sys
+from pathlib import Path
 import threading
+
+# Allow direct script execution (e.g. python backend/app/main.py or python app/main.py)
+_backend_dir = Path(__file__).resolve().parents[1]
+if str(_backend_dir) not in sys.path:
+    sys.path.insert(0, str(_backend_dir))
+
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -45,3 +53,7 @@ def create_app(db_path=None):
 
 
 app = create_app()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)

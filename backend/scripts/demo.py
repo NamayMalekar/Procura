@@ -1,5 +1,12 @@
 """Run:  python -m scripts.demo [CASE_ID ...]   -> readable story of what the agent did."""
 import sys
+from pathlib import Path
+
+# Allow direct script execution (e.g. python scripts/demo.py or python backend/scripts/demo.py)
+_backend_dir = Path(__file__).resolve().parents[1]
+if str(_backend_dir) not in sys.path:
+    sys.path.insert(0, str(_backend_dir))
+
 from app.agent.agent import Agent
 from app.agent.brains.rules import RulesBrain
 from app.database.store import Store

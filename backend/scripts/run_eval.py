@@ -1,4 +1,12 @@
 """python -m scripts.run_eval  -> scorecard for every scenario."""
+import sys
+from pathlib import Path
+
+# Allow direct script execution (e.g. python scripts/run_eval.py or python backend/scripts/run_eval.py)
+_backend_dir = Path(__file__).resolve().parents[1]
+if str(_backend_dir) not in sys.path:
+    sys.path.insert(0, str(_backend_dir))
+
 from app.evaluation.scorer import evaluate_all
 
 if __name__ == "__main__":

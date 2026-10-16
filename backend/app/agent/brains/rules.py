@@ -1,5 +1,13 @@
 """Offline brain: a deterministic buyer playbook. It uses the same tools as the LLM brain,
 so the whole system runs with no API key. It is also the fallback if the LLM fails."""
+import sys
+from pathlib import Path
+
+# Allow direct execution of this file (e.g. from IDE or python path/to/rules.py)
+_backend_dir = Path(__file__).resolve().parents[3]
+if str(_backend_dir) not in sys.path:
+    sys.path.insert(0, str(_backend_dir))
+
 from app.commons.money import cents
 from app.commons.packs import ceil_pack, floor_pack
 from app.core.policy import policy
@@ -45,7 +53,7 @@ class RulesBrain:
         base = tools.call("calculate_replenishment", sku=sku, node=node,
                           lead_time_days=base_lead, incoming_override=incoming)
         factors.append(f"Stock position {position} (on hand {inv['on_hand']} + incoming {incoming}) vs target "
-                       f"{base['target_position']} → real need {base['need_qty']} units.")
+                       f"{base['target_position']} -> real need {base['need_qty']} units.")
 
         escalation, chosen_qty, decision = None, 0, None
         if base["need_qty"] <= 0:
@@ -136,3 +144,20 @@ class RulesBrain:
             rationale += f" Original recommendation was {case['recommended_qty']} units."
         return {"decision": decision, "rationale": rationale, "factors": factors,
                 "actions": actions, "escalation": escalation}
+
+
+if __name__ == "__main__":
+    from app.agent.agent import Agent
+    from app.database.store import Store
+    from app.evaluation.cases import CASES
+
+    print("Running RulesBrain demonstration on evaluation cases...")
+    store = Store()
+    for case in CASES[:3]:
+        agent = Agent(store, RulesBrain(), auto_approve=True)
+        result = agent.run(case)
+        print(f"\n[{case['id']}] {case['title']}")
+        print(f"  Decision: {result['decision']}")
+        print(f"  Actions: {[(a['action'], a.get('qty'), a.get('supplier_id') or a.get('po_id')) for a in result.get('actions', [])]}")
+        print(f"  Status: {result['status']}")
+
