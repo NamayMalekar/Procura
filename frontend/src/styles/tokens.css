@@ -1,0 +1,26 @@
+/* Design tokens: every colour, font and spacing value lives here. Change the look from this file. */
+:root {
+  --font-display: 'Poppins', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  --bg: #f6f5f2;  --surface: #ffffff;  --surface-2: #faf9f6;
+  --ink: #141414; --muted: #6e6b65;   --line: #e4e1da;
+  --accent: #8a6b3d;  --accent-soft: #f1eadd;
+  --side: #0f1012;  --side-ink: #ecebe6;  --side-muted: #8d8a83;  --side-line: #26282c;
+  --ok: #2e6b55;   --ok-soft: #e4f0ea;
+  --warn: #96681c; --warn-soft: #f8eed9;
+  --bad: #9e3b34;  --bad-soft: #f7e6e4;
+
+  --radius: 2px;
+  --shadow: 0 1px 0 rgba(20, 20, 20, 0.04);
+}
+[data-theme='dark'] {
+  --bg: #0d0e10;  --surface: #15171a;  --surface-2: #111315;
+  --ink: #f1efea; --muted: #9a978f;   --line: #26282c;
+  --accent: #c8a46b;  --accent-soft: #2a2419;
+  --side: #09090a;
+  --ok: #6fc4a0;   --ok-soft: #14291f;
+  --warn: #e0b565; --warn-soft: #2e2410;
+  --bad: #ef8f86;  --bad-soft: #321a17;
+  --shadow: none;
+}
