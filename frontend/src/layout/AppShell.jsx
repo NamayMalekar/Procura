@@ -11,8 +11,11 @@ export default function AppShell({ page, setPage, theme, toggleTheme, config, ch
     <div className="shell">
       <aside className="side">
         <div className="brand">
-          <span className="brand-mark" />
-          <div><b>Procura</b><small>PURCHASING AGENT</small></div>
+          <span className="brand-mark">P</span>
+          <div>
+            <b>Procura</b>
+            <small>AI PURCHASING AGENT</small>
+          </div>
         </div>
         <nav className="nav" aria-label="Main">
           {NAV.map(([id, label, icon]) => (

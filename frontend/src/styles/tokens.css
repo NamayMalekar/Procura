@@ -1,26 +1,105 @@
-/* Design tokens: every colour, font and spacing value lives here. Change the look from this file. */
+/* Design tokens: modern, accessible, high-contrast palette with soft depth */
 :root {
-  --font-display: 'Poppins', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
+  --font-display: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  --bg: #f6f5f2;  --surface: #ffffff;  --surface-2: #faf9f6;
-  --ink: #141414; --muted: #6e6b65;   --line: #e4e1da;
-  --accent: #8a6b3d;  --accent-soft: #f1eadd;
-  --side: #0f1012;  --side-ink: #ecebe6;  --side-muted: #8d8a83;  --side-line: #26282c;
-  --ok: #2e6b55;   --ok-soft: #e4f0ea;
-  --warn: #96681c; --warn-soft: #f8eed9;
-  --bad: #9e3b34;  --bad-soft: #f7e6e4;
+  /* Surfaces & Backgrounds */
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
 
-  --radius: 2px;
-  --shadow: 0 1px 0 rgba(20, 20, 20, 0.04);
+  /* Typography */
+  --ink: #0f172a;
+  --ink-secondary: #334155;
+  --muted: #64748b;
+  --muted-light: #94a3b8;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+
+  /* Brand Accents (Royal Indigo) */
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eef2ff;
+  --accent-border: #c7d2fe;
+
+  /* Sidebar */
+  --side: #0f172a;
+  --side-surface: #1e293b;
+  --side-ink: #f8fafc;
+  --side-muted: #94a3b8;
+  --side-line: #1e293b;
+
+  /* Semantic Feedback States */
+  --ok: #059669;
+  --ok-soft: #ecfdf5;
+  --ok-border: #a7f3d0;
+
+  --warn: #d97706;
+  --warn-soft: #fffbeb;
+  --warn-border: #fde68a;
+
+  --bad: #e11d48;
+  --bad-soft: #fff1f2;
+  --bad-border: #fecdd3;
+
+  --info: #0284c7;
+  --info-soft: #f0f9ff;
+  --info-border: #bae6fd;
+
+  /* Geometry & Shadows */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
 }
+
 [data-theme='dark'] {
-  --bg: #0d0e10;  --surface: #15171a;  --surface-2: #111315;
-  --ink: #f1efea; --muted: #9a978f;   --line: #26282c;
-  --accent: #c8a46b;  --accent-soft: #2a2419;
-  --side: #09090a;
-  --ok: #6fc4a0;   --ok-soft: #14291f;
-  --warn: #e0b565; --warn-soft: #2e2410;
-  --bad: #ef8f86;  --bad-soft: #321a17;
-  --shadow: none;
+  --bg: #090d16;
+  --surface: #0f172a;
+  --surface-2: #1e293b;
+  --surface-3: #334155;
+
+  --ink: #f8fafc;
+  --ink-secondary: #cbd5e1;
+  --muted: #94a3b8;
+  --muted-light: #64748b;
+  --line: #1e293b;
+  --line-strong: #334155;
+
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-soft: #1e1b4b;
+  --accent-border: #3730a3;
+
+  --side: #060910;
+  --side-surface: #0f172a;
+  --side-ink: #f8fafc;
+  --side-muted: #64748b;
+  --side-line: #1e293b;
+
+  --ok: #34d399;
+  --ok-soft: #064e3b;
+  --ok-border: #047857;
+
+  --warn: #fbbf24;
+  --warn-soft: #451a03;
+  --warn-border: #78350f;
+
+  --bad: #fb7185;
+  --bad-soft: #4c0519;
+  --bad-border: #881337;
+
+  --info: #38bdf8;
+  --info-soft: #082f49;
+  --info-border: #0369a1;
+
+  --shadow-sm: none;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
 }
+

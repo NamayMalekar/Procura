@@ -17,7 +17,17 @@ class RulesBrain:
     name = "rules"
 
     def propose(self, case, tools, feedback=None):
+        """Playbook: Evaluate market & store conditions deterministically.
+        
+        Step 1: Fact Gathering (Investigate with Read-Only Tools)
+        Step 2: Shortfall Detection (Amend open POs that supplier under-delivers)
+        Step 3: Replenishment Target Calculation (Target stock vs Current Position)
+        Step 4: Decision Routing (Spike vs Sufficient Stock vs Net Deficit)
+        Step 5: Supplier Selection & Constraint Sizing (MOQ, Pack Size, Budget, Storage)
+        """
         sku, node = case["sku"], case["node"]
+
+        # --- STEP 1: FACT GATHERING ---
         inv = tools.call("get_inventory", sku=sku, node=node)
         dem = tools.call("get_demand", sku=sku, node=node)
         promos = tools.call("get_promotions", sku=sku)
@@ -27,6 +37,7 @@ class RulesBrain:
         a = dem["assessment"]
         factors, actions = [], []
 
+        # If previous cycle failed (e.g. supplier price change), log the cause for re-planning
         if feedback and feedback.get("execution_issues"):
             causes = [i["message"] for i in feedback["execution_issues"] if i["code"].startswith(("ORDER_", "ACTION_"))]
             factors.append("Re-planned after the last attempt failed: " +
@@ -35,7 +46,8 @@ class RulesBrain:
                        f"-> {a['status'].replace('_', ' ')}, planning with {a['effective_daily']}/day"
                        + (" (no promotion explains it)." if a["status"] != "normal" and not promos else "."))
 
-        # 1) fix open POs where the supplier is shipping less than we ordered
+        # --- STEP 2: INBOUND PIPELINE RECONCILIATION ---
+        # If an open PO has a supplier shortfall, amend it to what is real and credit back budget
         refund = 0.0
         for po in pos:
             if po["supplier_shortfall"]:
@@ -48,6 +60,7 @@ class RulesBrain:
         budget_cents = cents(bud["remaining"] + refund)
         storage_free = inv["storage_capacity"] - inv["on_hand"] - incoming
 
+        # --- STEP 3: BASELINE REPLENISHMENT CALCULATION ---
         preferred = case.get("supplier_id") or next((s["supplier_id"] for s in sups if s["is_primary"]), None)
         base_lead = next(s["lead_time_days"] for s in sups if s["supplier_id"] == preferred)
         base = tools.call("calculate_replenishment", sku=sku, node=node,
@@ -55,6 +68,7 @@ class RulesBrain:
         factors.append(f"Stock position {position} (on hand {inv['on_hand']} + incoming {incoming}) vs target "
                        f"{base['target_position']} -> real need {base['need_qty']} units.")
 
+        # --- STEP 4: DECISION ROUTING ---
         escalation, chosen_qty, decision = None, 0, None
         if base["need_qty"] <= 0:
             if a["status"] in ("single_day_spike", "ambiguous"):
@@ -71,6 +85,8 @@ class RulesBrain:
                 decision = "reject"
                 factors.append("Existing stock and open POs already cover the target; buying more would overstock.")
         else:
+            # --- STEP 5: SUPPLIER EVALUATION & CONSTRAINT FITTING ---
+            # Evaluate each supplier: MOQ, pack size, budget ceiling, storage room, reliability >= 0.75
             best = None
             notes = []
             for s in sups:

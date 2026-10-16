@@ -69,7 +69,18 @@ def _lead(store, case, actions):
     return store.supplier_item(primary, case["sku"])["lead_time_days"]
 
 
+# ============================================================================
+# LOOP 1: PRE-ACTION VALIDATION (SANDBOX SIMULATION)
+# ============================================================================
 def validate(store, case, proposal, called_tools):
+    """Safety guardrail executed BEFORE any proposal can reach a vendor.
+    
+    1. Checks evidence: ensures the brain gathered facts with read-only tools.
+    2. Checks actions: verifies supplier exists, reliability >= 0.75, MOQ, pack size.
+    3. Simulates on clone: clones SQLite in memory and tests budget, warehouse storage,
+       and the 125% stock ceiling.
+    4. If blocked, returns violations to the brain for automated retry (up to 3 tries).
+    """
     v = []
     d, actions = proposal.get("decision"), proposal.get("actions") or []
     esc = proposal.get("escalation")
@@ -141,8 +152,17 @@ def validate(store, case, proposal, called_tools):
             "metrics": {"before": before, "after": after}}
 
 
+# ============================================================================
+# LOOP 2: POST-ACTION REALITY CHECK (VERIFICATION & RE-PLANNING)
+# ============================================================================
 def verify(store, case, proposal, results, vmetrics):
-    """After executing for real: did we get what we expected?"""
+    """After executing for real with supplier APIs: did reality match the plan?
+    
+    1. Checks supplier response: detects rejected orders (e.g. stale price) or partial fills.
+    2. Reads back database state: compares actual stock position against simulated position.
+    3. If any discrepancy is found, triggers Cycle 2 re-planning (up to 3 cycles) or
+       raises a ticket for a human buyer.
+    """
     issues = []
     for r in results:
         if r["status"] == "rejected":
