@@ -4,7 +4,7 @@ import Icon from '../../commons/Icon'
 import Segmented from '../../commons/Segmented'
 import Switch from '../../commons/Switch'
 
-export default function CaseBrief({ item, config, brain, setBrain, auto, setAuto, busy, onRun }) {
+export default function CaseBrief({ item, config, brain, setBrain, auto, setAuto, busy, onRun, onReset }) {
   return (
     <div className="card brief">
       <div className="brief-top">
@@ -70,6 +70,19 @@ export default function CaseBrief({ item, config, brain, setBrain, auto, setAuto
         </div>
 
         <span className="grow" />
+
+        {onReset && (
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={onReset}
+            disabled={busy}
+            title="Reset database to clean initial state for this scenario"
+            style={{ marginRight: '8px' }}
+          >
+            Reset Data
+          </button>
+        )}
 
         <Button onClick={onRun} disabled={busy} className="run-agent-btn">
           <Icon name="play" size={16} />

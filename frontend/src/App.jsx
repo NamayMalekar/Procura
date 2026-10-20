@@ -25,7 +25,8 @@ export default function App() {
     <AppShell page={page} setPage={setPage} theme={theme} toggleTheme={toggleTheme} config={config}>
       {page === 'console' && (
         <ConsolePage cases={cases} config={config} state={consoleState} setState={setConsoleState}
-          onDataChanged={() => setDataVersion((v) => v + 1)} />
+          onDataChanged={() => setDataVersion((v) => v + 1)}
+          onReset={reset} />
       )}
       {page === 'data' && <DataPage version={dataVersion} onReset={reset} />}
       {page === 'evaluation' && <EvaluationPage />}

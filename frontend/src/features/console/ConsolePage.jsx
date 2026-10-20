@@ -8,7 +8,7 @@ import Outcome from './Outcome'
 import PipelineStepper from './PipelineStepper'
 import ScenarioList from './ScenarioList'
 
-export default function ConsolePage({ cases, config, state, setState, onDataChanged }) {
+export default function ConsolePage({ cases, config, state, setState, onDataChanged, onReset }) {
   const { selected, run } = state
   const [brain, setBrain] = useState('rules')
   const [auto, setAuto] = useState(false)
@@ -56,8 +56,11 @@ export default function ConsolePage({ cases, config, state, setState, onDataChan
           </p>
         </div>
         <div className="page-head-actions">
+          <button className="btn ghost" onClick={onReset} title="Reset database to clean initial state for scenarios">
+            Reset Scenario Data
+          </button>
           <button className="btn ghost" onClick={() => setShowGuide(true)}>
-            📖 Architecture & Developer Guide
+            Architecture & Developer Guide
           </button>
         </div>
       </header>
@@ -86,6 +89,7 @@ export default function ConsolePage({ cases, config, state, setState, onDataChan
               setAuto={setAuto}
               busy={busy}
               onRun={runAgent}
+              onReset={onReset}
             />
           )}
 
